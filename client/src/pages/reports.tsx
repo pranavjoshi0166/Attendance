@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, FileText } from "lucide-react";
@@ -20,19 +20,53 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-
-//todo: remove mock functionality
-const mockReportData = [
-  { date: "2025-01-15", subject: "CS201", lecture: "Binary Trees", status: "present" },
-  { date: "2025-01-16", subject: "CS301", lecture: "TCP/IP Protocol", status: "present" },
-  { date: "2025-01-17", subject: "CS202", lecture: "SQL Joins", status: "absent" },
-  { date: "2025-01-18", subject: "CS302", lecture: "Process Scheduling", status: "present" },
-  { date: "2025-01-19", subject: "CS201", lecture: "AVL Trees", status: "late" },
-];
+import { useSubjects } from "@/hooks/use-subjects";
+import { useLectures } from "@/hooks/use-lectures";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Reports() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [selectedSubjectId, setSelectedSubjectId] = useState("all");
+
+  const { data: subjects = [] } = useSubjects();
+  const { data: lectures = [], isLoading } = useLectures();
+  const { toast } = useToast();
+
+  const filteredLectures = useMemo(() => {
+    return lectures
+      .filter(lecture => {
+        // Filter by attendance status (only show lectures with marked attendance)
+        if (!lecture.status) return false;
+
+        // Filter by subject
+        if (selectedSubjectId !== "all" && lecture.subjectId !== selectedSubjectId) {
+          return false;
+        }
+
+        // Filter by date range
+        if (startDate && lecture.date < startDate) return false;
+        if (endDate && lecture.date > endDate) return false;
+
+        return true;
+      })
+      .sort((a, b) => b.date.localeCompare(a.date));
+  }, [lectures, selectedSubjectId, startDate, endDate]);
+
+  const reportData = useMemo(() => {
+    return filteredLectures.map(lecture => {
+      const subject = subjects.find(s => s.id === lecture.subjectId);
+      return {
+        date: lecture.date,
+        subjectCode: subject?.code || "N/A",
+        subjectName: subject?.name || "Unknown",
+        lecture: lecture.title,
+        status: lecture.status || "unknown",
+        startTime: lecture.startTime,
+        endTime: lecture.endTime,
+      };
+    });
+  }, [filteredLectures, subjects]);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { color: string; bg: string }> = {
@@ -55,12 +89,31 @@ export default function Reports() {
   };
 
   const handleExportPDF = () => {
-    console.log("Export to PDF triggered");
+    toast({
+      title: "Coming Soon",
+      description: "PDF export functionality will be available soon",
+    });
   };
 
   const handleExportExcel = () => {
-    console.log("Export to Excel triggered");
+    toast({
+      title: "Coming Soon",
+      description: "Excel export functionality will be available soon",
+    });
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 overflow-auto">
+        <div className="p-6 md:p-8 space-y-6">
+          <div className="animate-pulse">
+            <div className="h-8 w-64 bg-muted rounded mb-2"></div>
+            <div className="h-4 w-96 bg-muted rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-auto">
@@ -98,15 +151,17 @@ export default function Reports() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="filter-subject">Subject</Label>
-                <Select>
+                <Select value={selectedSubjectId} onValueChange={setSelectedSubjectId}>
                   <SelectTrigger id="filter-subject" data-testid="select-filter-subject">
                     <SelectValue placeholder="All subjects" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Subjects</SelectItem>
-                    <SelectItem value="cs201">Data Structures (CS201)</SelectItem>
-                    <SelectItem value="cs301">Computer Networks (CS301)</SelectItem>
-                    <SelectItem value="cs202">Database Systems (CS202)</SelectItem>
+                    {subjects.map((subject) => (
+                      <SelectItem key={subject.id} value={subject.id}>
+                        {subject.name} ({subject.code})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -126,29 +181,49 @@ export default function Reports() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">Attendance Records</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg font-semibold">Attendance Records</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                {reportData.length} {reportData.length === 1 ? "record" : "records"} found
+              </p>
+            </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Subject</TableHead>
-                  <TableHead>Lecture</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockReportData.map((record, index) => (
-                  <TableRow key={index} data-testid={`row-report-${index}`}>
-                    <TableCell>{record.date}</TableCell>
-                    <TableCell>{record.subject}</TableCell>
-                    <TableCell>{record.lecture}</TableCell>
-                    <TableCell>{getStatusBadge(record.status)}</TableCell>
+            {reportData.length === 0 ? (
+              <p className="text-center py-8 text-muted-foreground">
+                No attendance records found for the selected filters
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Subject</TableHead>
+                    <TableHead>Lecture</TableHead>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {reportData.map((record, index) => (
+                    <TableRow key={index} data-testid={`row-report-${index}`}>
+                      <TableCell>{record.date}</TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{record.subjectCode}</div>
+                          <div className="text-xs text-muted-foreground">{record.subjectName}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{record.lecture}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {record.startTime} - {record.endTime}
+                      </TableCell>
+                      <TableCell>{getStatusBadge(record.status)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>
