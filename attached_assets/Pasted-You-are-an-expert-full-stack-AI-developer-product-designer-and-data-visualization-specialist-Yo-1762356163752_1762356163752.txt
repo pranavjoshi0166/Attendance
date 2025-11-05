@@ -1,0 +1,94 @@
+You are an expert full-stack AI developer, product designer, and data visualization specialist.  
+Your task is to design and build a **complete working application** called **"AttendanceMate"** — a smart, personal attendance recording system.
+
+🧠 GOAL:
+Create an app (web or mobile-friendly) that allows users to record attendance, view visual analytics (pie chart + reports), and export attendance data to PDF and Excel.
+
+---
+
+### 🧩 CORE FEATURES
+1. **Subjects / Courses Management**
+   - Create, edit, delete subjects (Name, Code, Teacher, Color tag).
+   - Display subjects with total attendance %.
+
+2. **Lecture Scheduling**
+   - Add lectures to a calendar (Date, Start–End time, Subject, Title, Notes).
+   - Support recurring lectures (optional).
+
+3. **Attendance Marking**
+   - Mark attendance as: Present / Absent / Late / Excused.
+   - Quick toggle from calendar or daily list.
+   - Notes for each lecture.
+
+4. **Calendar View**
+   - Interactive calendar (Month/Week/Day).
+   - Colored indicators for attendance (green = present, red = absent, etc.).
+   - Click a date → see all lectures → mark attendance.
+
+5. **Analytics Dashboard**
+   - Overall Attendance %.
+   - Pie Chart: Present / Absent / Late / Excused.
+   - Bar Chart: Attendance by Subject.
+   - Line Chart: Weekly attendance trend.
+
+6. **Reports & Export**
+   - Select date range or subject → generate attendance report.
+   - Display summary + pie chart + detailed table.
+   - Export to:
+     - **PDF** (with logo, charts, summary table)
+     - **Excel (.xlsx)** (raw + summarized data)
+
+7. **Settings**
+   - Attendance alert threshold (e.g., “warn if below 75%”)
+   - Dark/Light theme toggle
+   - Data backup/export (JSON)
+
+---
+
+### 🎨 UI/UX REQUIREMENTS
+take all suggestons and layout shoud be like the picture as i uploded
+---
+
+### 💾 TECH STACK (choose modern tools automatically)
+* **Frontend:** React (Vite) or Next.js with Tailwind CSS
+* **Calendar:** FullCalendar or React Big Calendar
+* **Charts:** Chart.js or Recharts
+* **Database:** SQLite / IndexedDB / LocalStorage (for offline mode)
+* **PDF Export:** jsPDF + html2canvas
+* **Excel Export:** SheetJS (xlsx)
+* **Backend (optional):** Node.js + Express (with SQLite)
+* **Auth (optional):** Firebase Authentication for user login
+
+---
+
+### 📂 DATA MODEL (simplified)
+* **Subjects:** id, name, code, teacher, color
+* **Lectures:** id, subject_id, title, date, start_time, end_time, notes
+* **Attendance:** id, lecture_id, status, note, marked_at
+
+---
+
+### 📊 FUNCTIONALITY FLOW
+1. User opens app → Dashboard shows today’s attendance & charts.
+2. Calendar page → user can add lecture or mark attendance.
+3. Subjects page → shows % attendance per subject.
+4. Reports → select date range → view stats & export.
+5. Settings → theme, threshold, backup/export options.
+
+---
+
+### ⚙️ EXPORT FORMAT (PDF/Excel)
+**Columns:** Date | Subject | Lecture | Status | Notes | % per subject  
+Include pie chart (Present/Absent/Late/Excused) in header section of report.
+
+---
+
+### 🧱 OUTPUT EXPECTATIONS
+Generate:
+1. **Frontend code** (React + Tailwind)
+2. **Backend code (optional)** for data persistence (Node + Express)
+3. **Database schema (SQLite)**
+4. **Charts and export code**
+5. **UI screens** (Dashboard, Calendar, Lecture Modal, Subjects, Reports, Settings)
+6. **Step-by-step setup guide** (commands to install, run, and build)
+App Name: **AttendanceMate**
