@@ -76,7 +76,7 @@
   --chart-4: 217 91% 60%;
   --chart-5: 174 65% 41%;
 
-  --font-sans: Inter, Manrope, Open Sans, sans-serif;
+  --font-sans: 'Poppins', 'Inter', 'Manrope', 'Open Sans', sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
   --radius: .5rem; /* 8px */

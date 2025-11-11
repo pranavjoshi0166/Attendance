@@ -1,7 +1,10 @@
+
+
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertSubjectSchema, insertLectureSchema } from "@shared/schema";
+import { insertSubjectSchema, insertLectureSchema, insertWeeklyScheduleSchema, insertTaskSchema } from "@shared/schema";
+import type { Lecture } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Subject routes
@@ -31,8 +34,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validated = insertSubjectSchema.parse(req.body);
       const subject = await storage.createSubject(validated);
       res.status(201).json(subject);
-    } catch (error) {
-      res.status(400).json({ error: "Invalid subject data" });
+    } catch (error: any) {
+      console.error("Error creating subject:", error);
+      if (error.errors) {
+        res.status(400).json({ 
+          error: "Validation error", 
+          details: error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ')
+        });
+      } else {
+        res.status(400).json({ 
+          error: error.message || "Invalid subject data",
+          details: error.toString()
+        });
+      }
     }
   });
 
@@ -44,8 +58,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Subject not found" });
       }
       res.json(subject);
-    } catch (error) {
-      res.status(400).json({ error: "Invalid subject data" });
+    } catch (error: any) {
+      console.error("Error updating subject:", error);
+      if (error.errors) {
+        res.status(400).json({ 
+          error: "Validation error", 
+          details: error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ')
+        });
+      } else {
+        res.status(400).json({ 
+          error: error.message || "Invalid subject data",
+          details: error.toString()
+        });
+      }
     }
   });
 
@@ -94,8 +119,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validated = insertLectureSchema.parse(req.body);
       const lecture = await storage.createLecture(validated);
       res.status(201).json(lecture);
-    } catch (error) {
-      res.status(400).json({ error: "Invalid lecture data" });
+    } catch (error: any) {
+      console.error("Error creating lecture:", error);
+      if (error.errors) {
+        res.status(400).json({ 
+          error: "Validation error", 
+          details: error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ')
+        });
+      } else {
+        res.status(400).json({ 
+          error: error.message || "Invalid lecture data",
+          details: error.toString()
+        });
+      }
     }
   });
 
@@ -107,8 +143,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Lecture not found" });
       }
       res.json(lecture);
-    } catch (error) {
-      res.status(400).json({ error: "Invalid lecture data" });
+    } catch (error: any) {
+      console.error("Error updating lecture:", error);
+      if (error.errors) {
+        res.status(400).json({ 
+          error: "Validation error", 
+          details: error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ')
+        });
+      } else {
+        res.status(400).json({ 
+          error: error.message || "Invalid lecture data",
+          details: error.toString()
+        });
+      }
     }
   });
 
@@ -124,6 +171,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Weekly Schedule routes
+  app.get("/api/weekly-schedules", async (req, res) => {
+    try {
+      const { subjectId } = req.query;
+      let schedules;
+      if (subjectId && typeof subjectId === "string") {
+        schedules = await storage.getWeeklySchedulesBySubject(subjectId);
+      } else {
+        schedules = await storage.getAllWeeklySchedules();
+      }
+      res.json(schedules);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch weekly schedules" });
+    }
+  });
+
+  app.get("/api/weekly-schedules/:id", async (req, res) => {
+    try {
+      const schedule = await storage.getWeeklySchedule(req.params.id);
+      if (!schedule) {
+        return res.status(404).json({ error: "Weekly schedule not found" });
+      }
+      res.json(schedule);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch weekly schedule" });
+    }
+  });
+
+  app.post("/api/weekly-schedules", async (req, res) => {
+    try {
+      const validated = insertWeeklyScheduleSchema.parse(req.body);
+      const schedule = await storage.createWeeklySchedule(validated);
+      res.status(201).json(schedule);
+    } catch (error: any) {
+      console.error("Error creating weekly schedule:", error);
+      if (error.errors) {
+        res.status(400).json({ 
+          error: "Validation error", 
+          details: error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ')
+        });
+      } else {
+        res.status(400).json({ 
+          error: error.message || "Invalid weekly schedule data",
+          details: error.toString()
+        });
+      }
+    }
+  });
+
+  app.put("/api/weekly-schedules/:id", async (req, res) => {
+    try {
+      const validated = insertWeeklyScheduleSchema.partial().parse(req.body);
+      const schedule = await storage.updateWeeklySchedule(req.params.id, validated);
+      if (!schedule) {
+        return res.status(404).json({ error: "Weekly schedule not found" });
+      }
+      res.json(schedule);
+    } catch (error: any) {
+      console.error("Error updating weekly schedule:", error);
+      if (error.errors) {
+        res.status(400).json({ 
+          error: "Validation error", 
+          details: error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ')
+        });
+      } else {
+        res.status(400).json({ 
+          error: error.message || "Invalid weekly schedule data",
+          details: error.toString()
+        });
+      }
+    }
+  });
+
+  app.delete("/api/weekly-schedules/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteWeeklySchedule(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Weekly schedule not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete weekly schedule" });
+    }
+  });
+
+  // Generate lectures from schedules
+  app.post("/api/weekly-schedules/generate", async (req, res) => {
+    try {
+      const { startDate, endDate } = req.body;
+      const generated = await storage.generateLecturesFromSchedules(startDate, endDate);
+      res.json({ generated: generated.length, lectures: generated });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to generate lectures" });
+    }
+  });
+
   // Statistics endpoint for dashboard
   app.get("/api/statistics", async (req, res) => {
     try {
@@ -131,17 +274,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const subjects = await storage.getAllSubjects();
       
       const totalLectures = lectures.length;
-      const attendedLectures = lectures.filter(l => l.status === "present" || l.status === "late").length;
-      const missedLectures = lectures.filter(l => l.status === "absent").length;
+      const attendedLectures = lectures.filter((l: Lecture) => l.status === "present" || l.status === "late").length;
+      const missedLectures = lectures.filter((l: Lecture) => l.status === "absent").length;
       const attendancePercentage = totalLectures > 0 
         ? Math.round((attendedLectures / totalLectures) * 100 * 10) / 10 
         : 0;
 
       const breakdown = {
-        present: lectures.filter(l => l.status === "present").length,
-        absent: lectures.filter(l => l.status === "absent").length,
-        late: lectures.filter(l => l.status === "late").length,
-        excused: lectures.filter(l => l.status === "excused").length,
+        present: lectures.filter((l: Lecture) => l.status === "present").length,
+        absent: lectures.filter((l: Lecture) => l.status === "absent").length,
+        late: lectures.filter((l: Lecture) => l.status === "late").length,
+        excused: lectures.filter((l: Lecture) => l.status === "excused").length,
       };
 
       res.json({
@@ -154,6 +297,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch statistics" });
+    }
+  });
+
+  // Task routes
+  app.get("/api/tasks", async (req, res) => {
+    try {
+      const { date } = req.query;
+      let tasks;
+      if (date && typeof date === "string") {
+        tasks = await storage.getTasksByDate(date);
+      } else {
+        tasks = await storage.getAllTasks();
+      }
+      res.json(tasks);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch tasks" });
+    }
+  });
+
+  app.get("/api/tasks/:id", async (req, res) => {
+    try {
+      const task = await storage.getTask(req.params.id);
+      if (!task) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      res.json(task);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch task" });
+    }
+  });
+
+  app.post("/api/tasks", async (req, res) => {
+    try {
+      // Clean and validate input data
+      const cleanedData: any = {
+        title: req.body.title?.trim() || "",
+        date: req.body.date || "",
+        completed: req.body.completed || "false",
+        description: req.body.description?.trim() || null,
+        time: req.body.time?.trim() || null,
+        priority: req.body.priority || null,
+        subjectId: req.body.subjectId?.trim() || null,
+      };
+
+      // Validate required fields
+      if (!cleanedData.title || !cleanedData.date) {
+        return res.status(400).json({
+          error: "Validation error",
+          details: "Title and date are required fields"
+        });
+      }
+
+      const validated = insertTaskSchema.parse(cleanedData);
+      
+      const task = await storage.createTask(validated);
+      res.status(201).json(task);
+    } catch (error: any) {
+      console.error("Error creating task:", error);
+      if (error.errors) {
+        res.status(400).json({
+          error: "Validation error",
+          details: error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ')
+        });
+      } else {
+        res.status(400).json({
+          error: error.message || "Invalid task data",
+          details: error.toString()
+        });
+      }
+    }
+  });
+
+  app.put("/api/tasks/:id", async (req, res) => {
+    try {
+      const validated = insertTaskSchema.partial().parse(req.body);
+      const task = await storage.updateTask(req.params.id, validated);
+      if (!task) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      res.json(task);
+    } catch (error: any) {
+      console.error("Error updating task:", error);
+      if (error.errors) {
+        res.status(400).json({
+          error: "Validation error",
+          details: error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ')
+        });
+      } else {
+        res.status(400).json({
+          error: error.message || "Invalid task data",
+          details: error.toString()
+        });
+      }
+    }
+  });
+
+  app.delete("/api/tasks/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteTask(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Task not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete task" });
     }
   });
 

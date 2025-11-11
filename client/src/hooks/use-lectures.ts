@@ -6,17 +6,39 @@ export function useLectures(subjectId?: string) {
   return useQuery<Lecture[]>({
     queryKey: subjectId ? ["/api/lectures", { subjectId }] : ["/api/lectures"],
     queryFn: async () => {
-      const url = subjectId ? `/api/lectures?subjectId=${subjectId}` : "/api/lectures";
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch lectures");
-      return res.json();
+      try {
+        const url = subjectId ? `/api/lectures?subjectId=${subjectId}` : "/api/lectures";
+        const res = await fetch(url);
+        if (!res.ok) {
+          console.error("Failed to fetch lectures:", res.status, res.statusText);
+          return [];
+        }
+        const data = await res.json();
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error("Error fetching lectures:", error);
+        return [];
+      }
     },
+    initialData: [],
   });
 }
 
 export function useLecture(id: string) {
   return useQuery<Lecture>({
     queryKey: ["/api/lectures", id],
+    queryFn: async () => {
+      try {
+        const res = await fetch(`/api/lectures/${id}`);
+        if (!res.ok) {
+          throw new Error(`Failed to fetch lecture: ${res.status} ${res.statusText}`);
+        }
+        return await res.json();
+      } catch (error) {
+        console.error("Error fetching lecture:", error);
+        throw error;
+      }
+    },
     enabled: !!id,
   });
 }

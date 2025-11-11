@@ -1,335 +1,383 @@
-import { type Subject, type InsertSubject, type Lecture, type InsertLecture } from "@shared/schema";
-import { randomUUID } from "crypto";
+import fs from "fs";
+import path from "path";
+import { nanoid } from "nanoid";
+import type {
+  Subject,
+  InsertSubject,
+  Lecture,
+  InsertLecture,
+  WeeklySchedule,
+  InsertWeeklySchedule,
+  Task,
+  InsertTask,
+} from "@shared/schema";
 
-export interface IStorage {
-  // Subject operations
-  getAllSubjects(): Promise<Subject[]>;
-  getSubject(id: string): Promise<Subject | undefined>;
-  createSubject(subject: InsertSubject): Promise<Subject>;
-  updateSubject(id: string, subject: Partial<InsertSubject>): Promise<Subject | undefined>;
-  deleteSubject(id: string): Promise<boolean>;
-
-  // Lecture operations
-  getAllLectures(): Promise<Lecture[]>;
-  getLecture(id: string): Promise<Lecture | undefined>;
-  getLecturesBySubject(subjectId: string): Promise<Lecture[]>;
-  createLecture(lecture: InsertLecture): Promise<Lecture>;
-  updateLecture(id: string, lecture: Partial<InsertLecture>): Promise<Lecture | undefined>;
-  deleteLecture(id: string): Promise<boolean>;
-}
-
-export class MemStorage implements IStorage {
-  private subjects: Map<string, Subject>;
-  private lectures: Map<string, Lecture>;
+class MemStorage {
+  private subjects: Map<string, Subject> = new Map();
+  private lectures: Map<string, Lecture> = new Map();
+  private weeklySchedules: Map<string, WeeklySchedule> = new Map();
+  private tasks: Map<string, Task> = new Map();
 
   constructor() {
-    this.subjects = new Map();
-    this.lectures = new Map();
-    this.seedData();
+    this.loadInitialData();
   }
 
-  private seedData() {
-    // Sample subjects
-    const sampleSubjects: Subject[] = [
-      {
-        id: "sub1",
-        name: "Data Structures",
-        code: "CS201",
-        teacher: "Dr. Sarah Johnson",
-        color: "hsl(174, 65%, 41%)",
-      },
-      {
-        id: "sub2",
-        name: "Computer Networks",
-        code: "CS301",
-        teacher: "Prof. Mike Chen",
-        color: "hsl(217, 91%, 60%)",
-      },
-      {
-        id: "sub3",
-        name: "Database Systems",
-        code: "CS202",
-        teacher: "Dr. Emily Brown",
-        color: "hsl(45, 93%, 47%)",
-      },
-      {
-        id: "sub4",
-        name: "Operating Systems",
-        code: "CS302",
-        teacher: "Prof. David Lee",
-        color: "hsl(142, 76%, 36%)",
-      },
-    ];
+  private loadInitialData() {
+    try {
+      // Get directory path - handle both import.meta.dirname (Node 20.11+) and import.meta.url
+      let __dirname: string;
+      if (typeof import.meta.dirname !== 'undefined') {
+        __dirname = import.meta.dirname;
+      } else {
+        const fileUrl = new URL(import.meta.url);
+        let filePath = fileUrl.pathname;
+        // Handle Windows paths (remove leading slash)
+        if (process.platform === 'win32' && filePath.startsWith('/')) {
+          filePath = filePath.slice(1);
+        }
+        __dirname = path.dirname(filePath);
+      }
+      const dataDir = path.resolve(__dirname, "..", "data");
+      
+      console.log("Loading data from:", dataDir);
 
-    sampleSubjects.forEach(subject => {
-      this.subjects.set(subject.id, subject);
-    });
+      // Load subjects
+      const subjectsPath = path.join(dataDir, "subjects.json");
+      if (fs.existsSync(subjectsPath)) {
+        const subjectsData = JSON.parse(fs.readFileSync(subjectsPath, "utf-8"));
+        subjectsData.forEach((subject: Subject) => {
+          this.subjects.set(subject.id, subject);
+        });
+      }
 
-    // Sample lectures (mix of past and upcoming)
-    const today = new Date();
-    const sampleLectures: Lecture[] = [
-      // Past lectures with attendance marked
-      {
-        id: "lec1",
-        subjectId: "sub1",
-        title: "Introduction to Arrays",
-        date: this.getDateString(-14),
-        startTime: "09:00",
-        endTime: "10:30",
-        notes: "Arrays and basic operations",
-        status: "present",
-        attendanceNote: null,
-      },
-      {
-        id: "lec2",
-        subjectId: "sub1",
-        title: "Linked Lists",
-        date: this.getDateString(-13),
-        startTime: "09:00",
-        endTime: "10:30",
-        notes: "Single and doubly linked lists",
-        status: "present",
-        attendanceNote: null,
-      },
-      {
-        id: "lec3",
-        subjectId: "sub2",
-        title: "OSI Model",
-        date: this.getDateString(-12),
-        startTime: "11:00",
-        endTime: "12:30",
-        notes: "Network layers",
-        status: "present",
-        attendanceNote: null,
-      },
-      {
-        id: "lec4",
-        subjectId: "sub3",
-        title: "SQL Basics",
-        date: this.getDateString(-11),
-        startTime: "14:00",
-        endTime: "15:30",
-        notes: "SELECT, INSERT, UPDATE",
-        status: "absent",
-        attendanceNote: "Was sick",
-      },
-      {
-        id: "lec5",
-        subjectId: "sub1",
-        title: "Stacks and Queues",
-        date: this.getDateString(-10),
-        startTime: "09:00",
-        endTime: "10:30",
-        notes: "Stack and queue operations",
-        status: "present",
-        attendanceNote: null,
-      },
-      {
-        id: "lec6",
-        subjectId: "sub4",
-        title: "Process Management",
-        date: this.getDateString(-9),
-        startTime: "10:00",
-        endTime: "11:30",
-        notes: "Process states and scheduling",
-        status: "present",
-        attendanceNote: null,
-      },
-      {
-        id: "lec7",
-        subjectId: "sub2",
-        title: "TCP/IP Protocol",
-        date: this.getDateString(-8),
-        startTime: "11:00",
-        endTime: "12:30",
-        notes: "Transport layer protocols",
-        status: "late",
-        attendanceNote: "Traffic delay",
-      },
-      {
-        id: "lec8",
-        subjectId: "sub3",
-        title: "Database Normalization",
-        date: this.getDateString(-7),
-        startTime: "14:00",
-        endTime: "15:30",
-        notes: "1NF, 2NF, 3NF",
-        status: "present",
-        attendanceNote: null,
-      },
-      {
-        id: "lec9",
-        subjectId: "sub1",
-        title: "Trees",
-        date: this.getDateString(-6),
-        startTime: "09:00",
-        endTime: "10:30",
-        notes: "Binary trees",
-        status: "present",
-        attendanceNote: null,
-      },
-      {
-        id: "lec10",
-        subjectId: "sub4",
-        title: "Memory Management",
-        date: this.getDateString(-5),
-        startTime: "10:00",
-        endTime: "11:30",
-        notes: "Virtual memory",
-        status: "present",
-        attendanceNote: null,
-      },
-      {
-        id: "lec11",
-        subjectId: "sub2",
-        title: "HTTP and HTTPS",
-        date: this.getDateString(-4),
-        startTime: "11:00",
-        endTime: "12:30",
-        notes: "Application layer protocols",
-        status: "present",
-        attendanceNote: null,
-      },
-      {
-        id: "lec12",
-        subjectId: "sub3",
-        title: "Indexes and Views",
-        date: this.getDateString(-3),
-        startTime: "14:00",
-        endTime: "15:30",
-        notes: "Database optimization",
-        status: "present",
-        attendanceNote: null,
-      },
-      {
-        id: "lec13",
-        subjectId: "sub1",
-        title: "Graph Algorithms",
-        date: this.getDateString(-2),
-        startTime: "09:00",
-        endTime: "10:30",
-        notes: "BFS and DFS",
-        status: "absent",
-        attendanceNote: "Family emergency",
-      },
-      {
-        id: "lec14",
-        subjectId: "sub4",
-        title: "File Systems",
-        date: this.getDateString(-1),
-        startTime: "10:00",
-        endTime: "11:30",
-        notes: "File allocation methods",
-        status: "present",
-        attendanceNote: null,
-      },
-      // Upcoming lectures (no attendance marked)
-      {
-        id: "lec15",
-        subjectId: "sub1",
-        title: "Hashing",
-        date: this.getDateString(1),
-        startTime: "09:00",
-        endTime: "10:30",
-        notes: "Hash tables and collision resolution",
-        status: null,
-        attendanceNote: null,
-      },
-      {
-        id: "lec16",
-        subjectId: "sub2",
-        title: "Network Security",
-        date: this.getDateString(2),
-        startTime: "11:00",
-        endTime: "12:30",
-        notes: "Encryption and authentication",
-        status: null,
-        attendanceNote: null,
-      },
-      {
-        id: "lec17",
-        subjectId: "sub3",
-        title: "Transactions",
-        date: this.getDateString(3),
-        startTime: "14:00",
-        endTime: "15:30",
-        notes: "ACID properties",
-        status: null,
-        attendanceNote: null,
-      },
-    ];
+      // Load lectures
+      const lecturesPath = path.join(dataDir, "lectures.json");
+      if (fs.existsSync(lecturesPath)) {
+        const lecturesData = JSON.parse(fs.readFileSync(lecturesPath, "utf-8"));
+        lecturesData.forEach((lecture: Lecture) => {
+          this.lectures.set(lecture.id, lecture);
+        });
+      }
 
-    sampleLectures.forEach(lecture => {
-      this.lectures.set(lecture.id, lecture);
-    });
+      // Load weekly schedules
+      const schedulesPath = path.join(dataDir, "weeklySchedules.json");
+      if (fs.existsSync(schedulesPath)) {
+        const schedulesData = JSON.parse(fs.readFileSync(schedulesPath, "utf-8"));
+        schedulesData.forEach((schedule: WeeklySchedule) => {
+          this.weeklySchedules.set(schedule.id, schedule);
+        });
+      }
+
+      // Load tasks
+      const tasksPath = path.join(dataDir, "tasks.json");
+      if (fs.existsSync(tasksPath)) {
+        const tasksData = JSON.parse(fs.readFileSync(tasksPath, "utf-8"));
+        tasksData.forEach((task: Task) => {
+          this.tasks.set(task.id, task);
+        });
+      }
+    } catch (error) {
+      console.error("Error loading initial data:", error);
+    }
   }
 
-  private getDateString(daysOffset: number): string {
-    const date = new Date();
-    date.setDate(date.getDate() + daysOffset);
-    return date.toISOString().split('T')[0];
+  private saveToFile() {
+    try {
+      // Get directory path
+      let __dirname: string;
+      if (typeof import.meta.dirname !== 'undefined') {
+        __dirname = import.meta.dirname;
+      } else {
+        const fileUrl = new URL(import.meta.url);
+        let filePath = fileUrl.pathname;
+        if (process.platform === 'win32' && filePath.startsWith('/')) {
+          filePath = filePath.slice(1);
+        }
+        __dirname = path.dirname(filePath);
+      }
+      const dataDir = path.resolve(__dirname, "..", "data");
+      
+      // Ensure data directory exists
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+
+      // Save subjects
+      fs.writeFileSync(
+        path.join(dataDir, "subjects.json"),
+        JSON.stringify(Array.from(this.subjects.values()), null, 2),
+        "utf-8"
+      );
+
+      // Save lectures
+      fs.writeFileSync(
+        path.join(dataDir, "lectures.json"),
+        JSON.stringify(Array.from(this.lectures.values()), null, 2),
+        "utf-8"
+      );
+
+      // Save weekly schedules
+      fs.writeFileSync(
+        path.join(dataDir, "weeklySchedules.json"),
+        JSON.stringify(Array.from(this.weeklySchedules.values()), null, 2),
+        "utf-8"
+      );
+
+      // Save tasks
+      fs.writeFileSync(
+        path.join(dataDir, "tasks.json"),
+        JSON.stringify(Array.from(this.tasks.values()), null, 2),
+        "utf-8"
+      );
+    } catch (error) {
+      console.error("Error saving data:", error);
+    }
   }
 
-  // Subject operations
+  // Subject methods
+  
   async getAllSubjects(): Promise<Subject[]> {
     return Array.from(this.subjects.values());
   }
 
-  async getSubject(id: string): Promise<Subject | undefined> {
-    return this.subjects.get(id);
+  async getSubject(id: string): Promise<Subject | null> {
+    return this.subjects.get(id) || null;
   }
 
-  async createSubject(insertSubject: InsertSubject): Promise<Subject> {
-    const id = randomUUID();
-    const subject: Subject = { ...insertSubject, id };
-    this.subjects.set(id, subject);
+  async createSubject(data: InsertSubject): Promise<Subject> {
+    const subject: Subject = {
+      id: nanoid(),
+      name: data.name,
+      code: data.code,
+      teacher: data.teacher || null,
+      color: data.color || "#0ea5a0",
+    };
+    this.subjects.set(subject.id, subject);
+    this.saveToFile();
     return subject;
   }
 
-  async updateSubject(id: string, updates: Partial<InsertSubject>): Promise<Subject | undefined> {
-    const subject = this.subjects.get(id);
-    if (!subject) return undefined;
-    const updated = { ...subject, ...updates };
+  async updateSubject(id: string, data: Partial<InsertSubject>): Promise<Subject | null> {
+    const existing = this.subjects.get(id);
+    if (!existing) return null;
+
+    const updated: Subject = {
+      ...existing,
+      ...(data.name !== undefined && { name: data.name }),
+      ...(data.code !== undefined && { code: data.code }),
+      ...(data.teacher !== undefined && { teacher: data.teacher || null }),
+      ...(data.color !== undefined && { color: data.color }),
+    };
     this.subjects.set(id, updated);
+    this.saveToFile();
     return updated;
   }
 
   async deleteSubject(id: string): Promise<boolean> {
-    return this.subjects.delete(id);
+    const result = this.subjects.delete(id);
+    if (result) this.saveToFile();
+    return result;
   }
 
-  // Lecture operations
+  // Lecture methods
   async getAllLectures(): Promise<Lecture[]> {
     return Array.from(this.lectures.values());
   }
 
-  async getLecture(id: string): Promise<Lecture | undefined> {
-    return this.lectures.get(id);
+  async getLecture(id: string): Promise<Lecture | null> {
+    return this.lectures.get(id) || null;
   }
 
   async getLecturesBySubject(subjectId: string): Promise<Lecture[]> {
-    return Array.from(this.lectures.values()).filter(
-      (lecture) => lecture.subjectId === subjectId
-    );
+    return Array.from(this.lectures.values()).filter((l) => l.subjectId === subjectId);
   }
 
-  async createLecture(insertLecture: InsertLecture): Promise<Lecture> {
-    const id = randomUUID();
-    const lecture: Lecture = { ...insertLecture, id };
-    this.lectures.set(id, lecture);
+  async createLecture(data: InsertLecture): Promise<Lecture> {
+    const lecture: Lecture = {
+      id: nanoid(),
+      subjectId: data.subjectId,
+      title: data.title,
+      date: data.date,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      notes: data.notes || null,
+      status: data.status || null,
+      attendanceNote: data.attendanceNote || null,
+    };
+    this.lectures.set(lecture.id, lecture);
+    this.saveToFile();
     return lecture;
   }
 
-  async updateLecture(id: string, updates: Partial<InsertLecture>): Promise<Lecture | undefined> {
-    const lecture = this.lectures.get(id);
-    if (!lecture) return undefined;
-    const updated = { ...lecture, ...updates };
+  async updateLecture(id: string, data: Partial<InsertLecture>): Promise<Lecture | null> {
+    const existing = this.lectures.get(id);
+    if (!existing) return null;
+
+    const updated: Lecture = {
+      ...existing,
+      ...(data.subjectId !== undefined && { subjectId: data.subjectId }),
+      ...(data.title !== undefined && { title: data.title }),
+      ...(data.date !== undefined && { date: data.date }),
+      ...(data.startTime !== undefined && { startTime: data.startTime }),
+      ...(data.endTime !== undefined && { endTime: data.endTime }),
+      ...(data.notes !== undefined && { notes: data.notes || null }),
+      ...(data.status !== undefined && { status: data.status || null }),
+      ...(data.attendanceNote !== undefined && { attendanceNote: data.attendanceNote || null }),
+    };
     this.lectures.set(id, updated);
+    this.saveToFile();
     return updated;
   }
 
   async deleteLecture(id: string): Promise<boolean> {
-    return this.lectures.delete(id);
+    const result = this.lectures.delete(id);
+    if (result) this.saveToFile();
+    return result;
+  }
+
+  // Weekly Schedule methods
+  async getAllWeeklySchedules(): Promise<WeeklySchedule[]> {
+    return Array.from(this.weeklySchedules.values());
+  }
+
+  async getWeeklySchedule(id: string): Promise<WeeklySchedule | null> {
+    return this.weeklySchedules.get(id) || null;
+  }
+
+  async getWeeklySchedulesBySubject(subjectId: string): Promise<WeeklySchedule[]> {
+    return Array.from(this.weeklySchedules.values()).filter((s) => s.subjectId === subjectId);
+  }
+
+  async createWeeklySchedule(data: InsertWeeklySchedule): Promise<WeeklySchedule> {
+    const schedule: WeeklySchedule = {
+      id: nanoid(),
+      subjectId: data.subjectId,
+      weekday: data.weekday,
+      startTime: data.startTime,
+      endTime: data.endTime,
+      title: data.title,
+    };
+    this.weeklySchedules.set(schedule.id, schedule);
+    this.saveToFile();
+    return schedule;
+  }
+
+  async updateWeeklySchedule(
+    id: string,
+    data: Partial<InsertWeeklySchedule>
+  ): Promise<WeeklySchedule | null> {
+    const existing = this.weeklySchedules.get(id);
+    if (!existing) return null;
+
+    const updated: WeeklySchedule = {
+      ...existing,
+      ...(data.subjectId !== undefined && { subjectId: data.subjectId }),
+      ...(data.weekday !== undefined && { weekday: data.weekday }),
+      ...(data.startTime !== undefined && { startTime: data.startTime }),
+      ...(data.endTime !== undefined && { endTime: data.endTime }),
+      ...(data.title !== undefined && { title: data.title }),
+    };
+    this.weeklySchedules.set(id, updated);
+    this.saveToFile();
+    return updated;
+  }
+
+  async deleteWeeklySchedule(id: string): Promise<boolean> {
+    const result = this.weeklySchedules.delete(id);
+    if (result) this.saveToFile();
+    return result;
+  }
+
+  async generateLecturesFromSchedules(startDate: string, endDate: string): Promise<Lecture[]> {
+    const generated: Lecture[] = [];
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const schedules = Array.from(this.weeklySchedules.values());
+
+    for (let currentDate = new Date(start); currentDate <= end; currentDate.setDate(currentDate.getDate() + 1)) {
+      const dayOfWeek = currentDate.getDay(); // 0 = Sunday, 6 = Saturday
+      const dateStr = currentDate.toISOString().split("T")[0];
+
+      // Find matching schedules for this weekday
+      const matchingSchedules = schedules.filter((s) => s.weekday === dayOfWeek);
+
+      for (const schedule of matchingSchedules) {
+        // Check if lecture already exists for this schedule on this date
+        const existing = Array.from(this.lectures.values()).find(
+          (l) => l.subjectId === schedule.subjectId && l.date === dateStr
+        );
+
+        if (!existing) {
+          const lecture = await this.createLecture({
+            subjectId: schedule.subjectId,
+            title: schedule.title,
+            date: dateStr,
+            startTime: schedule.startTime,
+            endTime: schedule.endTime,
+            notes: null,
+            status: null,
+            attendanceNote: null,
+          });
+          generated.push(lecture);
+        }
+      }
+    }
+
+    return generated;
+  }
+
+  // Task methods
+  async getAllTasks(): Promise<Task[]> {
+    return Array.from(this.tasks.values());
+  }
+
+  async getTask(id: string): Promise<Task | null> {
+    return this.tasks.get(id) || null;
+  }
+
+  async getTasksByDate(date: string): Promise<Task[]> {
+    return Array.from(this.tasks.values()).filter((t) => t.date === date);
+  }
+
+  async createTask(data: InsertTask): Promise<Task> {
+    const task: Task = {
+      id: nanoid(),
+      title: data.title,
+      description: data.description || null,
+      date: data.date,
+      time: data.time || null,
+      priority: data.priority || null,
+      completed: data.completed || "false",
+      subjectId: data.subjectId || null,
+    };
+    this.tasks.set(task.id, task);
+    this.saveToFile();
+    return task;
+  }
+
+  async updateTask(id: string, data: Partial<InsertTask>): Promise<Task | null> {
+    const existing = this.tasks.get(id);
+    if (!existing) return null;
+
+    const updated: Task = {
+      ...existing,
+      ...(data.title !== undefined && { title: data.title }),
+      ...(data.description !== undefined && { description: data.description || null }),
+      ...(data.date !== undefined && { date: data.date }),
+      ...(data.time !== undefined && { time: data.time || null }),
+      ...(data.priority !== undefined && { priority: data.priority || null }),
+      ...(data.completed !== undefined && { completed: data.completed || "false" }),
+      ...(data.subjectId !== undefined && { subjectId: data.subjectId || null }),
+    };
+    this.tasks.set(id, updated);
+    this.saveToFile();
+    return updated;
+  }
+
+  async deleteTask(id: string): Promise<boolean> {
+    const result = this.tasks.delete(id);
+    if (result) this.saveToFile();
+    return result;
   }
 }
 

@@ -7,7 +7,7 @@ interface SubjectCardProps {
   id: string;
   name: string;
   code: string;
-  teacher: string;
+  teacher: string | null;
   attendancePercentage: number;
   color: string;
   onEdit?: () => void;

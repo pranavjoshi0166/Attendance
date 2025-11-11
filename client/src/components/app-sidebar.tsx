@@ -1,4 +1,4 @@
-import { Home, Calendar, BookOpen, FileText, Settings } from "lucide-react";
+import { Home, Calendar, BookOpen, FileText, Settings, Clock } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -30,6 +30,11 @@ const menuItems = [
     icon: BookOpen,
   },
   {
+    title: "Timetable",
+    url: "/timetable",
+    icon: Clock,
+  },
+  {
     title: "Reports",
     url: "/reports",
     icon: FileText,
@@ -48,8 +53,8 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="p-6">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
-            <BookOpen className="w-5 h-5 text-primary-foreground" />
+          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-md">
+            <span className="text-2xl">🎓</span>
           </div>
           <span className="text-lg font-semibold">AttendanceMate</span>
         </div>

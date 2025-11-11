@@ -6,11 +6,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ErrorBoundary } from "@/components/error-boundary";
 import Dashboard from "@/pages/dashboard";
 import Calendar from "@/pages/calendar";
 import Subjects from "@/pages/subjects";
 import Reports from "@/pages/reports";
 import Settings from "@/pages/settings";
+import Timetable from "@/pages/timetable";
 import NotFound from "@/pages/not-found";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +23,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/calendar" component={Calendar} />
       <Route path="/subjects" component={Subjects} />
+      <Route path="/timetable" component={Timetable} />
       <Route path="/reports" component={Reports} />
       <Route path="/settings" component={Settings} />
       <Route component={NotFound} />
@@ -35,29 +38,31 @@ export default function App() {
   };
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <SidebarProvider style={style as React.CSSProperties}>
-          <div className="flex h-screen w-full">
-            <AppSidebar />
-            <div className="flex flex-col flex-1 overflow-hidden">
-              <header className="flex items-center justify-between p-4 border-b bg-background">
-                <SidebarTrigger data-testid="button-sidebar-toggle" />
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon" data-testid="button-notifications">
-                    <Bell className="w-5 h-5" />
-                  </Button>
-                  <ThemeToggle />
-                </div>
-              </header>
-              <main className="flex-1 overflow-hidden">
-                <Router />
-              </main>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <SidebarProvider style={style as React.CSSProperties}>
+            <div className="flex h-screen w-full">
+              <AppSidebar />
+              <div className="flex flex-col flex-1 overflow-hidden">
+                <header className="flex items-center justify-between p-4 border-b bg-background">
+                  <SidebarTrigger data-testid="button-sidebar-toggle" />
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" data-testid="button-notifications">
+                      <Bell className="w-5 h-5" />
+                    </Button>
+                    <ThemeToggle />
+                  </div>
+                </header>
+                <main className="flex-1 overflow-auto">
+                  <Router />
+                </main>
+              </div>
             </div>
-          </div>
-        </SidebarProvider>
-        <Toaster />
-      </TooltipProvider>
-    </QueryClientProvider>
+          </SidebarProvider>
+          <Toaster />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

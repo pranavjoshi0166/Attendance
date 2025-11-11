@@ -5,12 +5,39 @@ import type { Subject, InsertSubject } from "@shared/schema";
 export function useSubjects() {
   return useQuery<Subject[]>({
     queryKey: ["/api/subjects"],
+    queryFn: async () => {
+      try {
+        const res = await fetch("/api/subjects");
+        if (!res.ok) {
+          console.error("Failed to fetch subjects:", res.status, res.statusText);
+          return [];
+        }
+        const data = await res.json();
+        return Array.isArray(data) ? data : [];
+      } catch (error) {
+        console.error("Error fetching subjects:", error);
+        return [];
+      }
+    },
+    initialData: [],
   });
 }
 
 export function useSubject(id: string) {
   return useQuery<Subject>({
     queryKey: ["/api/subjects", id],
+    queryFn: async () => {
+      try {
+        const res = await fetch(`/api/subjects/${id}`);
+        if (!res.ok) {
+          throw new Error(`Failed to fetch subject: ${res.status} ${res.statusText}`);
+        }
+        return await res.json();
+      } catch (error) {
+        console.error("Error fetching subject:", error);
+        throw error;
+      }
+    },
     enabled: !!id,
   });
 }
