@@ -45,14 +45,21 @@ export function useSubject(id: string) {
 export function useCreateSubject() {
   return useMutation({
     mutationFn: async (data: InsertSubject) => {
+      console.log("useCreateSubject mutationFn called", data);
       return apiRequest<Subject>("/api/subjects", {
         method: "POST",
         body: JSON.stringify(data),
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/subjects"] });
+    retry: 0, // PREVENT DUPLICATE RETRIES
+    onSuccess: (newSubject) => {
+      console.log("useCreateSubject onSuccess", newSubject);
+      // Use refetchQueries instead of invalidateQueries to prevent race conditions
+      queryClient.refetchQueries({ queryKey: ["/api/subjects"], exact: true });
       queryClient.invalidateQueries({ queryKey: ["/api/statistics"] });
+    },
+    onError: (error) => {
+      console.error("useCreateSubject onError", error);
     },
   });
 }

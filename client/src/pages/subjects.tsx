@@ -56,6 +56,7 @@ export default function Subjects() {
   const [deletingSubjectId, setDeletingSubjectId] = useState<string | null>(null);
   const [selectedSubjectForSchedule, setSelectedSubjectForSchedule] = useState<Subject | null>(null);
   const [editingSchedule, setEditingSchedule] = useState<WeeklySchedule | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // LOCAL GUARD FLAG
   const [formData, setFormData] = useState({
     name: "",
     code: "",
@@ -97,6 +98,18 @@ export default function Subjects() {
     });
   }, [subjects, lectures]);
 
+  const renderedSubjects = useMemo(() => {
+    const uniqueByCode = new Map<string, typeof subjectsWithAttendance[number]>();
+    for (const subject of subjectsWithAttendance) {
+      if (!subject || !subject.id) continue;
+      const key = subject.code?.trim().toLowerCase() || subject.id;
+      if (!uniqueByCode.has(key)) {
+        uniqueByCode.set(key, subject);
+      }
+    }
+    return Array.from(uniqueByCode.values());
+  }, [subjectsWithAttendance]);
+
   const handleOpenDialog = (subject?: Subject) => {
     if (subject) {
       setEditingSubject(subject);
@@ -119,6 +132,9 @@ export default function Subjects() {
   };
 
   const handleSubmit = async () => {
+    console.log("handleSubmit called", Date.now()); // DEBUGGING
+
+    // VALIDATION: Check required fields
     if (!formData.name || !formData.code) {
       toast({
         title: "Validation Error",
@@ -126,6 +142,35 @@ export default function Subjects() {
         variant: "destructive",
       });
       return;
+    }
+
+    // PREVENT DOUBLE SUBMISSIONS: Local flag guard - MUST BE FIRST
+    if (isSubmitting) {
+      console.log("Blocked: Already submitting");
+      return;
+    }
+
+    // PREVENT RAPID DOUBLE CLICKS: Check if mutation is already in progress
+    if (createSubject.isPending || updateSubject.isPending) {
+      console.log("Blocked: Mutation pending");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    // DUPLICATE PREVENTION: Check if subject code already exists (only for new subjects)
+    if (!editingSubject) {
+      const codeTrim = formData.code.trim().toLowerCase();
+      const duplicate = subjects.some(s => s?.code?.trim().toLowerCase() === codeTrim);
+      if (duplicate) {
+        toast({
+          title: "Duplicate Subject",
+          description: `A subject with code "${formData.code}" already exists`,
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
     }
 
     try {
@@ -147,13 +192,23 @@ export default function Subjects() {
           description: "Subject updated successfully",
         });
       } else {
+        // Single API call - only one subject will be created
+        console.log("Calling createSubject.mutateAsync", submitData);
         await createSubject.mutateAsync(submitData);
         toast({
           title: "Success",
           description: "Subject created successfully",
         });
       }
+      // Close dialog and reset form
       setIsDialogOpen(false);
+      setFormData({
+        name: "",
+        code: "",
+        teacher: "",
+        color: "#0ea5a0",
+      });
+      setEditingSubject(null);
     } catch (error: any) {
       console.error("Error saving subject:", error);
       const errorMessage = error?.response?.data?.details || error?.response?.data?.error || error?.message || "Failed to save subject";
@@ -162,6 +217,8 @@ export default function Subjects() {
         description: errorMessage,
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false); // ALWAYS RESET FLAG
     }
   };
 
@@ -317,7 +374,7 @@ export default function Subjects() {
 
             <TabsContent value="subjects" className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {subjectsWithAttendance.map((subject) => (
+                {renderedSubjects.map((subject) => (
                   <SubjectCard
                     key={subject.id}
                     {...subject}
@@ -348,8 +405,7 @@ export default function Subjects() {
                   </CardContent>
                 </Card>
               ) : (
-                subjects.map((subject) => {
-                  if (!subject || !subject.id) return null;
+                subjects.filter(s => s && s.id).map((subject) => {
                 const subjectSchedules = getSubjectSchedules(subject.id);
                 return (
                   <Card key={subject.id}>
@@ -444,7 +500,14 @@ export default function Subjects() {
       </div>
 
       {/* Subject Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+      <Dialog open={isDialogOpen} onOpenChange={(open) => {
+        // PREVENT CLOSING DURING SUBMISSION
+        if (!open && (isSubmitting || createSubject.isPending || updateSubject.isPending)) {
+          console.log("Blocked: Cannot close dialog during submission");
+          return;
+        }
+        setIsDialogOpen(open);
+      }}>
         <DialogContent data-testid="dialog-add-subject">
           <DialogHeader>
             <DialogTitle>{editingSubject ? "Edit Subject" : "Add New Subject"}</DialogTitle>
@@ -499,8 +562,9 @@ export default function Subjects() {
               Cancel
             </Button>
             <Button
+              type="button"
               onClick={handleSubmit}
-              disabled={createSubject.isPending || updateSubject.isPending}
+              disabled={isSubmitting || createSubject.isPending || updateSubject.isPending}
               data-testid="button-submit-subject"
             >
               {editingSubject ? "Update Subject" : "Add Subject"}
