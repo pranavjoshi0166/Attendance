@@ -37,6 +37,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   })
 
+  app.get('/api/subjects/:id', async (req, res) => {
+    try {
+      const subject = await storage.getSubject(req.params.id);
+      if (!subject) {
+        return res.status(404).json({ error: "Subject not found" });
+      }
+      res.json(subject);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch subject" });
+    }
+  })
+
+  app.post('/api/subjects', async (req, res) => {
+    try {
+      const validated = insertSubjectSchema.parse(req.body);
+      const subject = await storage.createSubject(validated);
+      res.status(201).json(subject);
+      broadcast({ type: 'subjects' })
+    } catch (error: any) {
+      console.error("Error creating subject:", error);
+      if (error.errors) {
+        res.status(400).json({ 
+          error: "Validation error", 
+          details: error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ')
+        });
+      } else {
+        res.status(400).json({ 
+          error: error.message || "Invalid subject data",
+          details: error.toString()
+        });
+      }
+    }
+  })
+
+  app.put('/api/subjects/:id', async (req, res) => {
+    try {
+      const validated = insertSubjectSchema.partial().parse(req.body);
+      const subject = await storage.updateSubject(req.params.id, validated);
+      if (!subject) {
+        return res.status(404).json({ error: "Subject not found" });
+      }
+      res.json(subject);
+      broadcast({ type: 'subjects' })
+    } catch (error: any) {
+      console.error("Error updating subject:", error);
+      if (error.errors) {
+        res.status(400).json({ 
+          error: "Validation error", 
+          details: error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ')
+        });
+      } else {
+        res.status(400).json({ 
+          error: error.message || "Invalid subject data",
+          details: error.toString()
+        });
+      }
+    }
+  })
+
+  app.delete('/api/subjects/:id', async (req, res) => {
+    try {
+      const deleted = await storage.deleteSubject(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Subject not found" });
+      }
+      res.status(204).send();
+      broadcast({ type: 'subjects' })
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete subject" });
+    }
+  })
+
   // Lecture routes
   app.get("/api/lectures", async (req, res) => {
     try {
