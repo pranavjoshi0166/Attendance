@@ -26,7 +26,9 @@ export function useSubjects() {
         return []
       }
     },
-    initialData: [],
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 }
 
