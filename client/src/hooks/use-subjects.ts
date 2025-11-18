@@ -7,19 +7,22 @@ export function useSubjects() {
     queryKey: ["/api/subjects"],
     queryFn: async () => {
       try {
+        console.log('[useSubjects] Fetching subjects from API...')
         const res = await fetch('/api/subjects')
         if (!res.ok) {
-          console.error('Failed to fetch subjects:', res.status)
+          console.error('[useSubjects] Failed to fetch subjects:', res.status)
           return []
         }
         const data = await res.json()
+        console.log('[useSubjects] Received subjects data:', data)
         if (!Array.isArray(data)) {
-          console.error('Invalid subjects data format:', data)
+          console.error('[useSubjects] Invalid subjects data format:', data)
           return []
         }
+        console.log('[useSubjects] Returning', data.length, 'subjects')
         return data
       } catch (error) {
-        console.error('Error fetching subjects:', error)
+        console.error('[useSubjects] Error fetching subjects:', error)
         return []
       }
     },

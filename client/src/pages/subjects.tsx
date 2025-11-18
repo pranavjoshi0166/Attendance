@@ -83,7 +83,10 @@ export default function Subjects() {
   const deleteWeeklySchedule = useDeleteWeeklySchedule();
   const { toast } = useToast();
 
+  console.log('[Subjects Page] subjects:', subjects, 'isLoading:', isLoading);
+
   const subjectsWithAttendance = useMemo(() => {
+    console.log('[Subjects Page] Computing subjectsWithAttendance, subjects:', subjects?.length, 'lectures:', lectures?.length);
     if (!subjects || !lectures) return [];
     return subjects.map(subject => {
       const subjectLectures = lectures.filter(l => l && l.subjectId === subject.id);
