@@ -1,31 +1,12 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { supabase } from "@/lib/supabase";
-import { useAuth } from "@/lib/auth";
 import type { Task, InsertTask } from "@shared/schema";
 
 export function useTasks(date?: string) {
-  const { userId } = useAuth()
   return useQuery<Task[]>({
     queryKey: date ? ["/api/tasks", { date }] : ["/api/tasks"],
     queryFn: async () => {
       try {
-        if (supabase && userId) {
-          let query = supabase.from('tasks').select('*').eq('user_id', userId)
-          if (date) query = query.eq('date', date)
-          const { data, error } = await query.order('date', { ascending: true })
-          if (error) throw error
-          return (data || []).map((t: any) => ({
-            id: t.id,
-            title: t.title,
-            description: t.description,
-            date: t.date,
-            time: t.time,
-            priority: t.priority,
-            completed: t.completed ? 'true' : 'false',
-            subjectId: t.subject_id || null,
-          })) as Task[]
-        }
         const url = date ? `/api/tasks?date=${date}` : "/api/tasks";
         const res = await fetch(url);
         if (!res.ok) {
@@ -39,7 +20,9 @@ export function useTasks(date?: string) {
         return [];
       }
     },
-    initialData: [],
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -63,32 +46,8 @@ export function useTask(id: string) {
 }
 
 export function useCreateTask() {
-  const { userId } = useAuth()
   return useMutation({
     mutationFn: async (data: InsertTask) => {
-      if (supabase && userId) {
-        const { data: created, error } = await supabase.from('tasks').insert({
-          user_id: userId,
-          title: data.title,
-          description: data.description,
-          date: data.date,
-          time: data.time,
-          priority: data.priority,
-          completed: (data.completed || 'false') === 'true',
-          subject_id: data.subjectId,
-        }).select('*').single()
-        if (error) throw error
-        return {
-          id: created.id,
-          title: created.title,
-          description: created.description,
-          date: created.date,
-          time: created.time,
-          priority: created.priority,
-          completed: created.completed ? 'true' : 'false',
-          subjectId: created.subject_id || null,
-        } as Task
-      }
       return apiRequest<Task>("/api/tasks", {
         method: "POST",
         body: JSON.stringify(data),
@@ -101,31 +60,8 @@ export function useCreateTask() {
 }
 
 export function useUpdateTask() {
-  const { userId } = useAuth()
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<InsertTask> }) => {
-      if (supabase && userId) {
-        const payload: any = {}
-        if (data.title !== undefined) payload.title = data.title
-        if (data.description !== undefined) payload.description = data.description
-        if (data.date !== undefined) payload.date = data.date
-        if (data.time !== undefined) payload.time = data.time
-        if (data.priority !== undefined) payload.priority = data.priority
-        if (data.completed !== undefined) payload.completed = data.completed === 'true'
-        if (data.subjectId !== undefined) payload.subject_id = data.subjectId
-        const { data: updated, error } = await supabase.from('tasks').update(payload).eq('id', id).eq('user_id', userId).select('*').single()
-        if (error) throw error
-        return {
-          id: updated.id,
-          title: updated.title,
-          description: updated.description,
-          date: updated.date,
-          time: updated.time,
-          priority: updated.priority,
-          completed: updated.completed ? 'true' : 'false',
-          subjectId: updated.subject_id || null,
-        } as Task
-      }
       return apiRequest<Task>(`/api/tasks/${id}`, {
         method: "PUT",
         body: JSON.stringify(data),
@@ -138,14 +74,8 @@ export function useUpdateTask() {
 }
 
 export function useDeleteTask() {
-  const { userId } = useAuth()
   return useMutation({
     mutationFn: async (id: string) => {
-      if (supabase && userId) {
-        const { error } = await supabase.from('tasks').delete().eq('id', id).eq('user_id', userId)
-        if (error) throw error
-        return { ok: true }
-      }
       return apiRequest(`/api/tasks/${id}`, {
         method: "DELETE",
       });

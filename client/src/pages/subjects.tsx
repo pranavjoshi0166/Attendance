@@ -83,10 +83,7 @@ export default function Subjects() {
   const deleteWeeklySchedule = useDeleteWeeklySchedule();
   const { toast } = useToast();
 
-  console.log('[Subjects Page] subjects:', subjects, 'isLoading:', isLoading);
-
   const subjectsWithAttendance = useMemo(() => {
-    console.log('[Subjects Page] Computing subjectsWithAttendance, subjects:', subjects?.length, 'lectures:', lectures?.length);
     if (!subjects || !lectures) return [];
     return subjects.map(subject => {
       const subjectLectures = lectures.filter(l => l && l.subjectId === subject.id);
@@ -137,8 +134,6 @@ export default function Subjects() {
   };
 
   const handleSubmit = async () => {
-    console.log("handleSubmit called", Date.now()); // DEBUGGING
-
     // VALIDATION: Check required fields
     if (!formData.name || !formData.code) {
       toast({
@@ -151,13 +146,11 @@ export default function Subjects() {
 
     // PREVENT DOUBLE SUBMISSIONS: Local flag guard - MUST BE FIRST
     if (isSubmitting) {
-      console.log("Blocked: Already submitting");
       return;
     }
 
     // PREVENT RAPID DOUBLE CLICKS: Check if mutation is already in progress
     if (createSubject.isPending || updateSubject.isPending) {
-      console.log("Blocked: Mutation pending");
       return;
     }
 
@@ -509,7 +502,6 @@ export default function Subjects() {
       <Dialog open={isDialogOpen} onOpenChange={(open) => {
         // PREVENT CLOSING DURING SUBMISSION
         if (!open && (isSubmitting || createSubject.isPending || updateSubject.isPending)) {
-          console.log("Blocked: Cannot close dialog during submission");
           return;
         }
         setIsDialogOpen(open);
