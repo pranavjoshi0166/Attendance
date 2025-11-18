@@ -302,6 +302,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.status(204).send();
       broadcast({ type: 'weekly-schedules' })
+      broadcast({ type: 'lectures' })
     } catch (error) {
       res.status(500).json({ error: "Failed to delete weekly schedule" });
     }
@@ -324,19 +325,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const lectures = await storage.getAllLectures();
       const subjects = await storage.getAllSubjects();
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const countedStatuses = new Set(["present", "absent", "excused"]);
+      const countedLectures = lectures.filter((lecture: Lecture) => {
+        if (!lecture?.status || !countedStatuses.has(lecture.status)) return false;
+        if (!lecture.date) return false;
+        const lectureDate = new Date(lecture.date);
+        if (isNaN(lectureDate.getTime())) return false;
+        lectureDate.setHours(0, 0, 0, 0);
+        return lectureDate <= today;
+      });
       
-      const totalLectures = lectures.length;
-      const attendedLectures = lectures.filter((l: Lecture) => l.status === "present" || l.status === "late").length;
-      const missedLectures = lectures.filter((l: Lecture) => l.status === "absent").length;
+      const totalLectures = countedLectures.length;
+      const attendedLectures = countedLectures.filter((l: Lecture) => l.status === "present").length;
+      const missedLectures = countedLectures.filter((l: Lecture) => l.status === "absent").length;
       const attendancePercentage = totalLectures > 0 
         ? Math.round((attendedLectures / totalLectures) * 100 * 10) / 10 
         : 0;
 
       const breakdown = {
-        present: lectures.filter((l: Lecture) => l.status === "present").length,
-        absent: lectures.filter((l: Lecture) => l.status === "absent").length,
-        late: lectures.filter((l: Lecture) => l.status === "late").length,
-        excused: lectures.filter((l: Lecture) => l.status === "excused").length,
+        present: countedLectures.filter((l: Lecture) => l.status === "present").length,
+        absent: countedLectures.filter((l: Lecture) => l.status === "absent").length,
+        requisition: countedLectures.filter((l: Lecture) => l.status === "excused").length,
       };
 
       res.json({

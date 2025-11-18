@@ -243,6 +243,7 @@ class MemStorage {
       notes: data.notes || null,
       status: data.status || null,
       attendanceNote: data.attendanceNote || null,
+      scheduleId: data.scheduleId || null,
     };
     this.lectures.set(lecture.id, lecture);
     this.saveToFile();
@@ -263,6 +264,7 @@ class MemStorage {
       ...(data.notes !== undefined && { notes: data.notes || null }),
       ...(data.status !== undefined && { status: data.status || null }),
       ...(data.attendanceNote !== undefined && { attendanceNote: data.attendanceNote || null }),
+      ...(data.scheduleId !== undefined && { scheduleId: data.scheduleId || null }),
     };
     this.lectures.set(id, updated);
     this.saveToFile();
@@ -323,8 +325,36 @@ class MemStorage {
   }
 
   async deleteWeeklySchedule(id: string): Promise<boolean> {
+    const schedule = this.weeklySchedules.get(id);
+    if (!schedule) return false;
+
     const result = this.weeklySchedules.delete(id);
-    if (result) this.saveToFile();
+    if (result) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      for (const [lectureId, lecture] of Array.from(this.lectures.entries())) {
+        const matchesLegacy =
+          lecture.subjectId === schedule.subjectId &&
+          lecture.title === schedule.title &&
+          lecture.startTime === schedule.startTime &&
+          lecture.endTime === schedule.endTime;
+
+        const matchesScheduleId = lecture.scheduleId === schedule.id;
+
+        if (matchesScheduleId || matchesLegacy) {
+          const lectureDate = new Date(lecture.date);
+          if (!isNaN(lectureDate.getTime())) {
+            lectureDate.setHours(0, 0, 0, 0);
+            if (lectureDate >= today && !lecture.status) {
+              this.lectures.delete(lectureId);
+            }
+          }
+        }
+      }
+
+      this.saveToFile();
+    }
     return result;
   }
 
@@ -359,6 +389,7 @@ class MemStorage {
             notes: null,
             status: null,
             attendanceNote: null,
+            scheduleId: schedule.id,
           });
           generated.push(lecture);
         }

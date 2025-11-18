@@ -21,6 +21,7 @@ export const lectures = pgTable("lectures", {
   notes: text("notes"),
   status: text("status"),
   attendanceNote: text("attendance_note"),
+  scheduleId: varchar("schedule_id"),
 });
 
 export const insertSubjectSchema = createInsertSchema(subjects).omit({
@@ -41,6 +42,8 @@ export const weeklySchedules = pgTable("weekly_schedules", {
 
 export const insertLectureSchema = createInsertSchema(lectures).omit({
   id: true,
+}).extend({
+  scheduleId: z.string().optional().nullable(),
 });
 
 export const insertWeeklyScheduleSchema = createInsertSchema(weeklySchedules).omit({

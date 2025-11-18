@@ -8,11 +8,23 @@ export interface Statistics {
   breakdown: {
     present: number;
     absent: number;
-    late: number;
-    excused: number;
+    requisition: number;
   };
   subjects: number;
 }
+
+const emptyStats: Statistics = {
+  totalLectures: 0,
+  attendedLectures: 0,
+  missedLectures: 0,
+  attendancePercentage: 0,
+  breakdown: {
+    present: 0,
+    absent: 0,
+    requisition: 0,
+  },
+  subjects: 0,
+};
 
 export function useStatistics() {
   return useQuery<Statistics>({
@@ -22,51 +34,20 @@ export function useStatistics() {
         const res = await fetch("/api/statistics");
         if (!res.ok) {
           console.error("Failed to fetch statistics:", res.status, res.statusText);
-          return {
-            totalLectures: 0,
-            attendedLectures: 0,
-            missedLectures: 0,
-            attendancePercentage: 0,
-            breakdown: {
-              present: 0,
-              absent: 0,
-              late: 0,
-              excused: 0,
-            },
-            subjects: 0,
-          };
+          return emptyStats;
         }
-        const data = await res.json();
-        return data;
+        return res.json();
       } catch (error) {
         console.error("Error fetching statistics:", error);
-        return {
-          totalLectures: 0,
-          attendedLectures: 0,
-          missedLectures: 0,
-          attendancePercentage: 0,
-          breakdown: {
-            present: 0,
-            absent: 0,
-            late: 0,
-            excused: 0,
-          },
-          subjects: 0,
-        };
+        return emptyStats;
       }
     },
-    initialData: {
-      totalLectures: 0,
-      attendedLectures: 0,
-      missedLectures: 0,
-      attendancePercentage: 0,
-      breakdown: {
-        present: 0,
-        absent: 0,
-        late: 0,
-        excused: 0,
-      },
-      subjects: 0,
-    },
+    initialData: emptyStats,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+    refetchInterval: 5000,
+    refetchIntervalInBackground: true,
   });
 }

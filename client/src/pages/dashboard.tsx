@@ -19,8 +19,7 @@ export default function Dashboard() {
     return [
       { name: "Present", value: stats.breakdown.present, color: "hsl(142, 76%, 36%)" },
       { name: "Absent", value: stats.breakdown.absent, color: "hsl(0, 72%, 51%)" },
-      { name: "Late", value: stats.breakdown.late, color: "hsl(45, 93%, 47%)" },
-      { name: "Excused", value: stats.breakdown.excused, color: "hsl(217, 91%, 60%)" },
+      { name: "Requisition", value: stats.breakdown.requisition, color: "hsl(217, 91%, 60%)" },
     ];
   }, [stats]);
 
@@ -43,7 +42,7 @@ export default function Dashboard() {
       });
       
       const attended = weekLectures.filter(l => 
-        l.status === "present" || l.status === "late" || l.status === "excused"
+        l.status === "present" || l.status === "excused"
       ).length;
       
       const missed = weekLectures.filter(l => l.status === "absent").length;

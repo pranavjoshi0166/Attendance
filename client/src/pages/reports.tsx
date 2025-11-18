@@ -76,6 +76,12 @@ export default function Reports() {
     });
   }, [filteredLectures, subjects]);
 
+  const formatStatusLabel = (status: string | null | undefined) => {
+    if (!status) return "Unknown";
+    if (status === "excused") return "Requisition";
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  };
+
   const getStatusBadge = (status: string) => {
     const variants: Record<string, { color: string; bg: string }> = {
       present: { color: "hsl(142, 76%, 36%)", bg: "hsl(142, 76%, 95%)" },
@@ -91,7 +97,7 @@ export default function Reports() {
         variant="secondary"
         style={{ backgroundColor: variant.bg, color: variant.color }}
       >
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {formatStatusLabel(status)}
       </Badge>
     );
   };
@@ -101,8 +107,7 @@ export default function Reports() {
     return [
       { name: "Present", value: stats.breakdown.present, color: "#22c55e" },
       { name: "Absent", value: stats.breakdown.absent, color: "#ef4444" },
-      { name: "Late", value: stats.breakdown.late, color: "#f59e0b" },
-      { name: "Excused", value: stats.breakdown.excused, color: "#3b82f6" },
+      { name: "Requisition", value: stats.breakdown.requisition, color: "#3b82f6" },
     ];
   }, [stats]);
 
@@ -162,7 +167,7 @@ export default function Reports() {
         pdf.text(record.subjectCode, 50, yPos);
         const lectureText = record.lecture.length > 25 ? record.lecture.substring(0, 22) + "..." : record.lecture;
         pdf.text(lectureText, 90, yPos);
-        pdf.text(record.status.charAt(0).toUpperCase() + record.status.slice(1), 150, yPos);
+        pdf.text(formatStatusLabel(record.status), 150, yPos);
         yPos += 6;
       });
 
@@ -215,7 +220,7 @@ export default function Reports() {
         Lecture: record.lecture,
         "Start Time": record.startTime,
         "End Time": record.endTime,
-        Status: record.status.charAt(0).toUpperCase() + record.status.slice(1),
+        Status: formatStatusLabel(record.status),
       }));
 
       // Create workbook
@@ -245,8 +250,7 @@ export default function Reports() {
           ["Breakdown"],
           ["Present", stats.breakdown.present],
           ["Absent", stats.breakdown.absent],
-          ["Late", stats.breakdown.late],
-          ["Excused", stats.breakdown.excused],
+          ["Requisition", stats.breakdown.requisition],
         ];
         const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
         XLSX.utils.book_append_sheet(wb, summaryWs, "Summary");
