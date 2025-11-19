@@ -24,15 +24,26 @@ export function StatCard({ title, value, icon: Icon, variant = "default", iconBg
   };
 
   return (
-    <Card data-testid={`card-stat-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+    <Card 
+      data-testid={`card-stat-${title.toLowerCase().replace(/\s+/g, '-')}`}
+      className="hover:shadow-lg transition-all duration-300 border-l-4"
+      style={{
+        borderLeftColor: variant === "success" ? "hsl(142, 76%, 36%)" : 
+                         variant === "danger" ? "hsl(0, 72%, 51%)" : 
+                         "hsl(var(--primary))"
+      }}
+    >
       <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2">
         <p className="text-sm font-medium text-muted-foreground">{title}</p>
-        <div className={cn("p-2 rounded-md", iconBgColor || bgColors[variant])}>
-          <Icon className={cn("w-4 h-4", iconColors[variant])} />
+        <div className={cn("p-2.5 rounded-lg shadow-sm", iconBgColor || bgColors[variant])}>
+          <Icon className={cn("w-5 h-5", iconColors[variant])} />
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-3xl font-bold" data-testid={`text-stat-value-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+        <div 
+          className="text-3xl md:text-4xl font-bold tracking-tight" 
+          data-testid={`text-stat-value-${title.toLowerCase().replace(/\s+/g, '-')}`}
+        >
           {value}
         </div>
       </CardContent>

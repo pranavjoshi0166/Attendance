@@ -48,6 +48,16 @@ const weekdays = [
   { value: 6, label: "Saturday" },
 ];
 
+const formatTimeTo12Hour = (time?: string | null) => {
+  if (!time) return "N/A";
+  const [hourStr, minute = "00"] = time.split(":");
+  const hourNumber = parseInt(hourStr ?? "", 10);
+  if (Number.isNaN(hourNumber)) return time;
+  const period = hourNumber >= 12 ? "PM" : "AM";
+  const normalizedHour = hourNumber % 12 || 12;
+  return `${normalizedHour}:${minute} ${period}`;
+};
+
 export default function Subjects() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -87,7 +97,7 @@ export default function Subjects() {
     if (!subjects || !lectures) return [];
     return subjects.map(subject => {
       const subjectLectures = lectures.filter(l => l && l.subjectId === subject.id);
-      const attendedLectures = subjectLectures.filter(l => l.status === "present" || l.status === "late" || l.status === "excused").length;
+      const attendedLectures = subjectLectures.filter(l => l.status === "present" || l.status === "excused").length;
       const totalLectures = subjectLectures.filter(l => l.status).length;
       const attendancePercentage = totalLectures > 0 
         ? Math.round((attendedLectures / totalLectures) * 100) 
@@ -462,7 +472,7 @@ export default function Subjects() {
                                 </div>
                                     <div className="flex items-center gap-4 text-sm">
                                       <p className="text-muted-foreground">
-                                        <span className="font-medium">Time:</span> {schedule.startTime || "N/A"} - {schedule.endTime || "N/A"}
+                                        <span className="font-medium">Time:</span> {formatTimeTo12Hour(schedule.startTime)} - {formatTimeTo12Hour(schedule.endTime)}
                                 </p>
                                     </div>
                               </div>

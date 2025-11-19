@@ -192,9 +192,9 @@ export default function Calendar() {
       return null; // Gray - not yet marked (will use card background)
     }
     
-    // Check if all lectures are attended (present, late, or excused)
+    // Check if all lectures are attended (present or excused)
     const allAttended = markedLectures.every(l => 
-      l.status === "present" || l.status === "late" || l.status === "excused"
+      l.status === "present" || l.status === "excused"
     );
     
     if (allAttended) {
@@ -208,7 +208,6 @@ export default function Calendar() {
     switch (status) {
       case "present": return "#22c55e";
       case "absent": return "#ef4444";
-      case "late": return "#f59e0b";
       case "excused": return "#3b82f6";
       default: return "#d1d5db";
     }
@@ -515,8 +514,7 @@ export default function Calendar() {
             <div className="mt-3 flex flex-wrap gap-2 text-xs">
               <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm bg-green-600"></span> Present</span>
               <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm bg-red-600"></span> Absent</span>
-              <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm bg-amber-600"></span> Late</span>
-              <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm bg-blue-600"></span> Excused</span>
+              <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-sm bg-blue-600"></span> Requisition</span>
             </div>
           </CardHeader>
           <CardContent className="p-4 md:p-6">
@@ -757,19 +755,11 @@ export default function Calendar() {
                               </Button>
                               <Button
                                 size="sm"
-                                variant={lecture.status === "late" ? "default" : "outline"}
-                                onClick={() => lecture.id && handleMarkAttendance(lecture.id, "late")}
-                                className={lecture.status === "late" ? "bg-amber-600 hover:bg-amber-700" : ""}
-                              >
-                                Late
-                              </Button>
-                              <Button
-                                size="sm"
                                 variant={lecture.status === "excused" ? "default" : "outline"}
                                 onClick={() => lecture.id && handleMarkAttendance(lecture.id, "excused")}
                                 className={lecture.status === "excused" ? "bg-blue-600 hover:bg-blue-700" : ""}
                               >
-                                Excused
+                                Requisition
                               </Button>
                             </div>
                           </div>

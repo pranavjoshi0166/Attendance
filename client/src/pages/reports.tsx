@@ -86,7 +86,6 @@ export default function Reports() {
     const variants: Record<string, { color: string; bg: string }> = {
       present: { color: "hsl(142, 76%, 36%)", bg: "hsl(142, 76%, 95%)" },
       absent: { color: "hsl(0, 72%, 51%)", bg: "hsl(0, 72%, 95%)" },
-      late: { color: "hsl(45, 93%, 47%)", bg: "hsl(45, 93%, 95%)" },
       excused: { color: "hsl(217, 91%, 60%)", bg: "hsl(217, 91%, 95%)" },
     };
 

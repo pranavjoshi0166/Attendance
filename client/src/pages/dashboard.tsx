@@ -71,10 +71,15 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="flex-1 overflow-auto">
-      <div className="p-4 md:p-6 lg:p-8 space-y-6 max-w-7xl mx-auto">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Track today, succeed tomorrow.</h1>
+    <div className="flex-1 overflow-auto bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto">
+        <div className="space-y-2">
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+            Track today, succeed tomorrow.
+          </h1>
+          <p className="text-muted-foreground text-sm md:text-base">
+            Monitor your attendance progress and stay on top of your academic goals
+          </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
@@ -105,8 +110,12 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-          <AttendanceLineChart data={attendanceTrendData} />
-          <AttendanceChart data={attendanceData} />
+          <div className="lg:col-span-1">
+            <AttendanceLineChart data={attendanceTrendData} />
+          </div>
+          <div className="lg:col-span-1">
+            <AttendanceChart data={attendanceData} />
+          </div>
         </div>
       </div>
     </div>
