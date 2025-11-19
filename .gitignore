@@ -23,8 +23,9 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
-# Data directory (local storage)
+# Data directory (local storage - keep local, never commit to git)
 /data
+data/
 
 # IDE
 .vscode/
